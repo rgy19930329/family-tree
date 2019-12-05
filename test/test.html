@@ -1,0 +1,261 @@
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <title>树状图</title>
+  <style>
+    .node circle {
+      fill: #fff;
+      stroke: steelblue;
+      stroke-width: 1.5px;
+    }
+
+    .node {
+      font: 12px sans-serif;
+    }
+
+    .link {
+      fill: none;
+      stroke: #ccc;
+      stroke-width: 1.5px;
+    }
+  </style>
+</head>
+
+<body>
+  <script src="http://d3js.org/d3.v3.min.js"></script>
+  <script>
+    var options = {
+      width: 1200,
+      height: 500,
+      boxWidth: 65,
+      boxHeight: 40
+    }
+    var city_tree = {
+      "name": "中国",
+      "children": [{
+        "name": "浙江",
+        "children": [{
+          "name": "杭州"
+        },
+        {
+          "name": "宁波"
+        },
+        {
+          "name": "温州"
+        },
+        {
+          "name": "绍兴"
+        }
+        ]
+      },
+
+      {
+        "name": "广西",
+        "children": [{
+          "name": "桂林",
+          "children": [{
+            "name": "秀峰区"
+          },
+          {
+            "name": "叠彩区"
+          },
+          {
+            "name": "象山区"
+          },
+          {
+            "name": "七星区"
+          }
+          ]
+        },
+        {
+          "name": "南宁"
+        },
+        {
+          "name": "柳州"
+        },
+        {
+          "name": "防城港"
+        }
+        ]
+      },
+
+      {
+        "name": "黑龙江",
+        "children": [{
+          "name": "哈尔滨"
+        },
+        {
+          "name": "齐齐哈尔"
+        },
+        {
+          "name": "牡丹江"
+        },
+        {
+          "name": "大庆"
+        }
+        ]
+      },
+
+      {
+        "name": "新疆",
+        "children": [{
+          "name": "乌鲁木齐"
+        },
+        {
+          "name": "克拉玛依"
+        },
+        {
+          "name": "吐鲁番"
+        },
+        {
+          "name": "哈密"
+        }
+        ]
+      }
+      ]
+    }
+
+    // 纵向树状图类
+    var StructureGraph = function () {
+      // 布局
+      this.tree = d3.layout.tree()
+        .size([options.width, options.height - 200])
+        .separation(function (a, b) {
+          return (a.parent == b.parent ? 1 : 2);
+        });
+
+      this.diagonal = d3.svg.diagonal()
+        .projection(function (d) {
+          return [d.x, d.y];
+        });
+
+      // 用来拖拽图以及扩大缩放
+      let zoom = d3.behavior.zoom()
+        .scaleExtent([.1, 1])
+        .on('zoom', () => {
+          this.svg.attr("transform", "translate(" + d3.event.translate + ") scale(" + d3.event.scale + ")");
+        });
+      this.svg = d3.select("body").append("svg")
+        .attr("width", options.width + 80)
+        .attr("height", options.height)
+        .call(zoom)
+        .append("g")
+        .attr("transform", "translate(40,40)");
+    }
+
+    // 开始渲染节点与连线
+    StructureGraph.prototype.render = function (source) {
+      this.renderLinks(source);
+      this.renderNodes(source);
+      return this;
+    }
+
+    // 渲染节点
+    StructureGraph.prototype.renderNodes = function (source) {
+      var _this = this;
+      this.node = this.svg.selectAll(".node")
+        .data(this.nodes)
+        .enter()
+        .append("g")
+        .attr("class", "node")
+        .attr("strokeWidth", 100)
+        .attr("transform", function (d) {
+          return "translate(" + d.x + "," + d.y + ")";
+        })
+      // 绘制矩形与文字
+      drawRect();
+
+      function drawRect() {
+        _this.node.append("rect")
+          .attr('y', 0)
+          .attr('x', function (d) {
+            return d.depth !== 2 ? -(options.boxWidth / 2) : -(options.boxHeight / 2)
+          })
+          .attr('width', function (d) {
+            return d.depth !== 2 ? options.boxWidth : options.boxHeight;
+          })
+          .attr('height', function (d) {
+            return d.depth !== 2 ? options.boxHeight : options.boxWidth;
+          })
+          // 矩形背景色以及边框颜色宽度
+          .attr('fill', '#fff')
+          .attr('stroke', 'steelblue')
+          .attr('strokeWidth', '1px')
+          .on('click', function (evt) {
+            console.log(evt); // 显示所点击节点数据
+          });
+
+        // Draw the person's name and position it inside the box
+        _this.node.append("text")
+          .attr('y', function (d) {
+            return d.depth !== 2 ? options.boxHeight / 2 + 5 : 0;
+          })
+          // .attr('rotate', function (d) { //显示竖直显示中文时rotate为0，英文-90
+          //     return 0;
+          // })
+          .attr('style', function (d) {
+            return d.depth !== 2 ? '' : "writing-mode: tb;letter-spacing:0px";
+          })
+          .attr("text-anchor", function (d) {
+            return d.depth !== 2 ? 'middle' : "start";
+          })
+          .text(function (d) {
+            return d.name;
+          });
+      }
+
+    }
+
+    // 渲染连线
+    StructureGraph.prototype.renderLinks = function (source) {
+      var _this = this;
+      this.nodes = this.tree.nodes(source);
+
+      this.links = this.tree.links(this.nodes);
+
+      drawLine();
+      // 将曲线换为折线
+      function drawLine() {
+        var link = _this.svg.selectAll("path.link")
+
+          // The function we are passing provides d3 with an id
+          // so that it can track when data is being added and removed.
+          // This is not necessary if the tree will only be drawn once
+          // as in the basic example.
+          .data(_this.links);
+
+        // Add new links    
+        link.enter().append("path")
+          .attr("class", "link");
+
+        // Remove any links we don't need anymore
+        // if part of the tree was collapsed
+        link.exit().remove();
+
+        // Update the links positions (old and new)
+        link.attr("d", elbow);
+
+        function elbow(d) {
+          let sourceX = d.source.x,
+            sourceY = d.source.y + options.boxHeight,
+            targetX = d.target.x,
+            targetY = d.target.y;
+
+          return "M" + sourceX + "," + sourceY +
+            "V" + ((targetY - sourceY) / 2 + sourceY) +
+            "H" + targetX +
+            "V" + targetY;
+
+        }
+      }
+    }
+
+    // 初始化实例。与jquery配合使用可以通过将下面两行代码放到$.fn.structure = (){}中，增加自定义插件
+    var ins = new StructureGraph();
+    ins.render(city_tree);
+  </script>
+
+</body>
+
+</html>
