@@ -1,0 +1,47 @@
+<!--
+ * @Desc: test
+ * @Author: ranguangyu
+ * @Date: 2019-12-04 15:15:19
+ -->
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>家族图谱</title>
+    <style>
+      #app svg {
+        border: 1px solid #f60;
+      }
+
+      .node {
+        font: 12px sans-serif;
+      }
+
+      .node circle {
+        fill: #fff;
+        stroke: steelblue;
+        stroke-width: 1.5px;
+      }
+
+      .node rect {
+        fill: #fff;
+        stroke: steelblue;
+        stroke-width: 1px;
+      }
+
+      .link {
+        fill: none;
+        stroke: #ccc;
+        stroke-width: 1px;
+      }
+    </style>
+    <script src="http://d3js.org/d3.v3.min.js"></script>
+  </head>
+
+  <body>
+    <div id="app"></div>
+    <script src="./data.js"></script>
+    <script src="./familyData.js"></script>
+    <script src="./tree.js"></script>
+  </body>
+</html>
